@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nossa História</title>
-    <link rel="stylesheet" href="style.css"> <style>
-        /* Estilos específicos para a Timeline */
-        body { background-color: #fff0f5; padding: 20px; }
+    <link rel="stylesheet" href="style.css"> 
+    <style>
+        /* Estilos para manter o visual fofinho */
+        body { background-color: #fff0f5; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .container { max-width: 600px; margin: 0 auto; text-align: center; }
         .timeline-item { 
             background: white; padding: 20px; border-radius: 15px; 
             margin: 20px 0; text-align: left; border-left: 5px solid #ff69b4;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-        .form-box { background: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; }
-        input, textarea { width: 90%; padding: 10px; margin: 5px 0; border-radius: 10px; border: 1px solid #ffb6c1; }
-        .add-btn { background: #ff69b4; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
+        .form-box { background: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        input, textarea { width: 90%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ffb6c1; outline: none; }
+        .add-btn { background: #ff69b4; color: white; border: none; padding: 12px 25px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .add-btn:hover { background: #ff1493; transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -25,58 +27,92 @@
 
         <div class="form-box">
             <h3>Adicionar Memória</h3>
-            <input type="text" id="titulo" placeholder="Título do momento">
+            <input type="text" id="titulo" placeholder="Título do momento (ex: Nosso primeiro encontro)">
             <input type="date" id="data">
-            <textarea id="desc" placeholder="O que aconteceu?"></textarea>
+            <textarea id="desc" rows="3" placeholder="O que aconteceu de especial?"></textarea>
             <button class="add-btn" onclick="salvarMomento()">Guardar ✨</button>
         </div>
 
         <div id="timeline-list">
-            </div>
+            <p>Carregando nossas memórias...</p>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Suas credenciais do projeto
         const supabaseUrl = 'https://byujwlsvmahgyyjcssne.supabase.co';
         const supabaseKey = 'sb_publishable_wkXJxy14f7R5M5VOHLl5hg_-eSL3Ecg';
         const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Carregar momentos ao abrir a página
+        // Executa ao carregar a página
         window.onload = carregarMomentos;
 
+        // Função para buscar os dados do banco
         async function carregarMomentos() {
             const { data, error } = await _supabase
                 .from('momentos')
                 .select('*')
-                .order('data_evento', { ascending: false });
+                .order('data', { ascending: false });
 
             const list = document.getElementById('timeline-list');
-            list.innerHTML = '';
+            
+            if (error) {
+                console.error("Erro ao buscar:", error);
+                list.innerHTML = '<p>Erro ao carregar memórias. 😢</p>';
+                return;
+            }
 
+            if (data.length === 0) {
+                list.innerHTML = '<p>Ainda não temos memórias guardadas. Vamos criar uma? 💕</p>';
+                return;
+            }
+
+            list.innerHTML = '';
             data.forEach(m => {
+                // Formata a data para o padrão brasileiro
+                const dataFormatada = m.data ? new Date(m.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Sem data';
+                
                 list.innerHTML += `
                     <div class="timeline-item">
-                        <small>${new Date(m.data_evento).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</small>
-                        <h3>${m.titulo}</h3>
-                        <p>${m.descricao}</p>
+                        <small style="color: #ff69b4; font-weight: bold;">${dataFormatada}</small>
+                        <h3 style="margin: 5px 0; color: #333;">${m.titulo}</h3>
+                        <p style="color: #666; line-height: 1.4;">${m.descrição}</p>
                     </div>
                 `;
             });
         }
 
+        // Função para enviar os dados para o banco
         async function salvarMomento() {
             const t = document.getElementById('titulo').value;
             const d = document.getElementById('data').value;
             const desc = document.getElementById('desc').value;
 
+            if (!t || !d || !desc) {
+                alert("Preencha todos os campos para guardar essa memória! 💕");
+                return;
+            }
+
             const { error } = await _supabase
                 .from('momentos')
-                .insert([{ titulo: t, data_evento: d, descricao: desc }]);
+                .insert([{ 
+                    titulo: t, 
+                    data: d, 
+                    descrição: desc // Note que usamos 'descrição' com cedilha e til, igual ao seu banco
+                }]);
 
-            if (error) alert("Erro ao salvar!");
-            else {
-                alert("Memória salva! ❤️");
-                location.reload();
+            if (error) {
+                console.error("Erro no Insert:", error);
+                alert("Houve um erro ao salvar. Verifique o console (F12).");
+            } else {
+                alert("Memória salva para sempre! ❤️");
+                // Limpa os campos
+                document.getElementById('titulo').value = '';
+                document.getElementById('data').value = '';
+                document.getElementById('desc').value = '';
+                // Recarrega a lista
+                carregarMomentos();
             }
         }
     </script>

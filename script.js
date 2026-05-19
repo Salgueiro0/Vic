@@ -19,9 +19,9 @@ let hintCount = 0;
 function showHint() {
     const hintElement = document.getElementById('hint-text');
     const hints = [
-        "Dica 1: É aquele apelido bobo que a gente usa...",
-        "Dica 2: A senha é aquele peixe que você não gosta (ou gosta? kkk).",
-        "Dica 3: Login: sapecuda | Senha: candiru (Ta muito fácil!)"
+        "Dica 1: login: o que você?",
+        "Dica 2: senha: quem é você",
+        "Dica 3: esta bemmm de boas kkkk, né sap... e você não é um Guaiamu"
     ];
 
     if (hintCount < hints.length) {
