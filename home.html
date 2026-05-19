@@ -4,157 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nossa História</title>
-    <style>
-        body {
-            background-color: #fff0f5; /* Lavanda suave */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            color: #4a4a4a;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        header h1 { color: #ff69b4; font-size: 2.5rem; }
-        header p { font-style: italic; font-size: 1.2rem; line-height: 1.6; }
-
-        /* Estilo da Linha do Tempo */
-        .timeline-section {
-            margin-top: 50px;
-            padding-top: 30px;
-            border-top: 2px dashed #ffb6c1;
-        }
-
-        .form-add-moment {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-bottom: 40px;
-        }
-
-        .form-add-moment input, .form-add-moment textarea {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ffb6c1;
-            border-radius: 8px;
-        }
-
-        .add-btn {
-            background-color: #ff69b4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .timeline {
-            position: relative;
-            text-align: left;
-        }
-
-        .timeline-item {
-            background: white;
-            margin: 20px 0;
-            padding: 20px;
-            border-radius: 15px;
-            border-left: 5px solid #ff69b4;
+    <link rel="stylesheet" href="style.css"> <style>
+        /* Estilos específicos para a Timeline */
+        body { background-color: #fff0f5; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; text-align: center; }
+        .timeline-item { 
+            background: white; padding: 20px; border-radius: 15px; 
+            margin: 20px 0; text-align: left; border-left: 5px solid #ff69b4;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
-
-        .timeline-item h3 { margin-top: 0; color: #ff1493; }
-        .timeline-item span { font-size: 0.8rem; color: #888; }
-        .timeline-item img { 
-            max-width: 100%; 
-            border-radius: 10px; 
-            margin-top: 15px; 
-            display: block;
-        }
+        .form-box { background: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; }
+        input, textarea { width: 90%; padding: 10px; margin: 5px 0; border-radius: 10px; border: 1px solid #ffb6c1; }
+        .add-btn { background: #ff69b4; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <header>
-            <h1>Bem-vinda ao nosso lugar, Vic 💖</h1>
-            <p>
-                "Desde que você chegou, cada pequeno momento se tornou uma memória preciosa. 
-                Este espaço é nosso, para lembrarmos de onde viemos e planejarmos para onde vamos."
-            </p>
-        </header>
+        <h1>Nossa História 💖</h1>
+        <p>"Cada dia ao seu lado é um novo capítulo."</p>
 
-        <section class="timeline-section">
-            <h2>Nossa Linha do Tempo</h2>
-            
-            <div class="form-add-moment">
-                <h3>Adicionar Novo Momento</h3>
-                <input type="text" id="moment-title" placeholder="Nome do momento (Ex: Primeiro Beijo)">
-                <input type="date" id="moment-date">
-                <textarea id="moment-desc" placeholder="Uma breve descrição..."></textarea>
-                <input type="file" id="moment-img" accept="image/*">
-                <br>
-                <button class="add-btn" onclick="addMoment()">Guardar Memória</button>
-            </div>
+        <div class="form-box">
+            <h3>Adicionar Memória</h3>
+            <input type="text" id="titulo" placeholder="Título do momento">
+            <input type="date" id="data">
+            <textarea id="desc" placeholder="O que aconteceu?"></textarea>
+            <button class="add-btn" onclick="salvarMomento()">Guardar ✨</button>
+        </div>
 
-            <div id="timeline-display" class="timeline">
-                <div class="timeline-item">
-                    <span>12/05/2023</span>
-                    <h3>O Início de Tudo</h3>
-                    <p>O dia em que decidimos que seríamos um do outro.</p>
-                </div>
+        <div id="timeline-list">
             </div>
-        </section>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        function addMoment() {
-            const title = document.getElementById('moment-title').value;
-            const date = document.getElementById('moment-date').value;
-            const desc = document.getElementById('moment-desc').value;
-            const imgInput = document.getElementById('moment-img');
-            const display = document.getElementById('timeline-display');
+        const supabaseUrl = 'https://byujwlsvmahgyyjcssne.supabase.co';
+        const supabaseKey = 'sb_publishable_wkXJxy14f7R5M5VOHLl5hg_-eSL3Ecg';
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-            if (!title || !date) {
-                alert("Por favor, preencha pelo menos o título e a data!");
-                return;
+        // Carregar momentos ao abrir a página
+        window.onload = carregarMomentos;
+
+        async function carregarMomentos() {
+            const { data, error } = await _supabase
+                .from('momentos')
+                .select('*')
+                .order('data_evento', { ascending: false });
+
+            const list = document.getElementById('timeline-list');
+            list.innerHTML = '';
+
+            data.forEach(m => {
+                list.innerHTML += `
+                    <div class="timeline-item">
+                        <small>${new Date(m.data_evento).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</small>
+                        <h3>${m.titulo}</h3>
+                        <p>${m.descricao}</p>
+                    </div>
+                `;
+            });
+        }
+
+        async function salvarMomento() {
+            const t = document.getElementById('titulo').value;
+            const d = document.getElementById('data').value;
+            const desc = document.getElementById('desc').value;
+
+            const { error } = await _supabase
+                .from('momentos')
+                .insert([{ titulo: t, data_evento: d, descricao: desc }]);
+
+            if (error) alert("Erro ao salvar!");
+            else {
+                alert("Memória salva! ❤️");
+                location.reload();
             }
-
-            const item = document.createElement('div');
-            item.className = 'timeline-item';
-
-            // Formata a data para padrão brasileiro
-            const dateObj = new Date(date);
-            const formattedDate = dateObj.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
-
-            let imgHtml = '';
-            if (imgInput.files && imgInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    item.appendChild(img);
-                };
-                reader.readAsDataURL(imgInput.files[0]);
-            }
-
-            item.innerHTML = `
-                <span>${formattedDate}</span>
-                <h3>${title}</h3>
-                <p>${desc}</p>
-            `;
-
-            display.prepend(item); // Adiciona no topo da lista
-
-            // Limpa os campos
-            document.getElementById('moment-title').value = '';
-            document.getElementById('moment-desc').value = '';
         }
     </script>
 </body>

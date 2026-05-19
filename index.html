@@ -9,21 +9,22 @@
 <body>
     <div class="login-container">
         <div class="login-box">
-            <h1>Oi amor 💖</h1>
+            <h1>Para: Vic 💖</h1>
             <p>Acesse seu presente:</p>
             
-            <input type="text" id="username" placeholder="insira o login">
-            <input type="password" id="password" placeholder="insira a senha">
+            <input type="text" id="username" placeholder="Como eu te chamo?">
+            <input type="password" id="password" placeholder="Nossa data (DDMMAAAA)">
             
             <button onclick="checkLogin()">Entrar</button>
-                        
+            
             <div class="hint-section">
-                <button class="hint-btn" onclick="showHint()">Precisa de uma dica? tem 3, mas aperte uma de cada vez... porque você já sabe a resposta...</button>
+                <button class="hint-btn" onclick="showHint()">Precisa de uma dica?</button>
                 <p id="hint-text" class="hidden"></p>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 </html>
