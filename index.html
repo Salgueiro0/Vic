@@ -1,11 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Para o Meu Amor</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Oi amor 💖</h1>
+            <p>Acesse seu presente:</p>
+            
+            <input type="text" id="username" placeholder="insira o login">
+            <input type="password" id="password" placeholder="insira a senha">
+            
+            <button onclick="checkLogin()">Entrar</button>
+                        
+            <div class="hint-section">
+                <button class="hint-btn" onclick="showHint()">Precisa de uma dica? tem 3, mas aperte uma de cada vez... porque você já sabe a resposta...</button>
+                <p id="hint-text" class="hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
