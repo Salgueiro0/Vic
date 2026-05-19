@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nossos Textinhos</title>
+    <style>
+        body { background-color: #fff0f5; padding: 20px; font-family: sans-serif; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; text-align: center; }
+        .form-box { background: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        textarea { width: 90%; padding: 10px; margin: 5px 0; border-radius: 10px; border: 1px solid #ffb6c1; outline: none; font-size: 16px; resize: none; }
+        .add-btn { background: #ff69b4; color: white; border: none; padding: 12px 25px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        .back-btn { background: none; color: #ff69b4; border: 1px solid #ff69b4; padding: 8px 15px; border-radius: 20px; cursor: pointer; margin-bottom: 20px; }
+        .textinho-card { 
+            background: #fff; padding: 15px; border-radius: 15px; margin: 15px 0; 
+            text-align: left; border-right: 5px solid #ffb6c1; position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+        }
+        .autor { font-weight: bold; color: #ff69b4; display: block; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="back-btn" onclick="window.location.href='home.html'">← Voltar</button>
+        <h1>Mural de Textinhos 💌</h1>
+
+        <div class="form-box">
+            <input type="text" id="quem" placeholder="Quem está escrevendo? (Seu nome)" style="width: 90%; padding: 10px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ffb6c1;">
+            <textarea id="texto" placeholder="Escreva algo fofo aqui..." rows="4"></textarea>
+            <button class="add-btn" id="btnEnviar" onclick="enviarTextinho()">Enviar Coração ✨</button>
+        </div>
+
+        <div id="mural-list"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const supabaseUrl = 'https://byujwlsvmahgyyjcssne.supabase.co';
+        const supabaseKey = 'sb_publishable_wkXJxy14f7R5M5VOHLl5hg_-eSL3Ecg';
+        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        window.onload = carregarTextinhos;
+
+        async function carregarTextinhos() {
+            const list = document.getElementById('mural-list');
+            const { data, error } = await _supabase
+                .from('textinhos')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) return console.error(error);
+
+            list.innerHTML = '';
+            data.forEach(t => {
+                list.innerHTML += `
+                    <div class="textinho-card">
+                        <span class="autor">De: ${t.autor}</span>
+                        <p>${t.mensagem}</p>
+                    </div>
+                `;
+            });
+        }
+
+        async function enviarTextinho() {
+            const autor = document.getElementById('quem').value;
+            const mensagem = document.getElementById('texto').value;
+
+            if (!autor || !mensagem) return alert("Escreve o nome e a mensagem, vida! 💕");
+
+            const { error } = await _supabase
+                .from('textinhos')
+                .insert([{ autor, mensagem }]);
+
+            if (!error) location.reload();
+            else alert("Erro ao enviar! Tente novamente.");
+        }
+    </script>
+</body>
+</html>
