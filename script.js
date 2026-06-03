@@ -1,14 +1,10 @@
-// Configuração do Supabase
-const supabaseUrl = 'https://byujwlsvmahgyyjcssne.supabase.co';
-const supabaseKey = 'sb_publishable_wkXJxy14f7R5M5VOHLl5hg_-eSL3Ecg';
-const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
 function checkLogin() {
-    const user = document.getElementById('username').value.toLowerCase();
-    const pass = document.getElementById('password').value;
+    const user = document.getElementById('username').value.toLowerCase().trim();
+    const pass = document.getElementById('password').value.trim();
 
     // Seus dados de acesso
     if (user === "sapecuda" && pass === "candiru") { 
+        localStorage.setItem('vic_logado', 'true');
         window.location.href = "home.html"; 
     } else {
         alert("Quase! Tenta de novo, vida. 💕");

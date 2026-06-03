@@ -34,11 +34,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script>
-        const supabaseUrl = 'https://byujwlsvmahgyyjcssne.supabase.co';
-        const supabaseKey = 'sb_publishable_wkXJxy14f7R5M5VOHLl5hg_-eSL3Ecg';
-        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
         window.onload = carregarTextinhos;
 
         async function carregarTextinhos() {
@@ -52,13 +49,67 @@
 
             list.innerHTML = '';
             data.forEach(t => {
+                const curtidas = t.curtidas || 0;
                 list.innerHTML += `
-                    <div class="textinho-card">
+                    <div class="textinho-card" style="position: relative;">
                         <span class="autor">De: ${t.autor}</span>
                         <p>${t.mensagem}</p>
+                        
+                        <!-- D: Botão de Curtida com Corações -->
+                        <div style="display: flex; align-items: center; margin-top: 10px; border-top: 1px dashed #ffb6c1; padding-top: 8px;">
+                            <button onclick="curtirTextinho(${t.id}, this)" style="background: none; border: none; font-size: 16px; cursor: pointer; display: flex; align-items: center; padding: 4px 8px; border-radius: 12px; background-color: #fff0f5; transition: transform 0.2s, background-color 0.2s;">
+                                💖 <span class="like-count" style="font-size: 12px; margin-left: 5px; color: #ff69b4; font-weight: bold;">${curtidas}</span>
+                            </button>
+                        </div>
                     </div>
                 `;
             });
+        }
+
+        // D: Incrementar curtidas no Supabase para a tabela 'textinhos'
+        async function curtirTextinho(id, buttonEl) {
+            const countEl = buttonEl.querySelector('.like-count');
+            let currentLikes = parseInt(countEl.innerText) || 0;
+            
+            // Efeito visual instantâneo
+            countEl.innerText = currentLikes + 1;
+            buttonEl.style.transform = "scale(1.2)";
+            buttonEl.style.backgroundColor = "#ffe4e1";
+            setTimeout(() => {
+                buttonEl.style.transform = "scale(1)";
+            }, 200);
+
+            try {
+                // Busca o número atual de curtidas para somar 1 de forma consistente
+                const { data, error: selectError } = await _supabase
+                    .from('textinhos')
+                    .select('curtidas')
+                    .eq('id', id)
+                    .single();
+
+                if (selectError) throw selectError;
+
+                let novosLikes = (data?.curtidas || 0) + 1;
+
+                const { error: updateError } = await _supabase
+                    .from('textinhos')
+                    .update({ curtidas: novosLikes })
+                    .eq('id', id);
+
+                if (updateError) throw updateError;
+
+            } catch (err) {
+                console.error("Erro ao curtir recado:", err);
+                // Reverte número se falhar
+                countEl.innerText = currentLikes;
+                buttonEl.style.backgroundColor = "#fff0f5";
+
+                if (err.message && (err.message.includes("column") || err.code === "PGRST204")) {
+                    alert("Atenção: Para ativar as curtidas, você precisa criar uma coluna chamada 'curtidas' (tipo bigint ou integer, valor padrão 0) na tabela 'textinhos' no seu painel do Supabase! 💕");
+                } else {
+                    alert("Erro ao salvar curtida! Tente novamente.");
+                }
+            }
         }
 
         async function enviarTextinho() {

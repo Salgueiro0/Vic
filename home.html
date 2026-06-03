@@ -23,7 +23,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>Nossa História 💖</h1>
+        <!-- B: Header com botão de logout fofo -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 24px;">Nossa História 💖</h1>
+            <button onclick="fazerLogout()" style="background: none; color: #ff69b4; border: 1px solid #ff69b4; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.3s;" onmouseover="this.style.backgroundColor='#ff69b4'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#ff69b4';">Sair 🚪</button>
+        </div>
         <p>"Cada dia ao seu lado é um novo capítulo. Então porque não guardamos tudo?"</p>
 
         <div class="form-box">
@@ -34,7 +38,13 @@
             
             <div style="text-align: left; padding: 0 5%;">
                 <label style="font-size: 12px; color: #ff69b4; font-weight: bold;">Escolha uma foto:</label><br>
-                <input type="file" id="foto" accept="image/*">
+                <input type="file" id="foto" accept="image/*" onchange="mostrarPreview(this)">
+                
+                <!-- C: Container de Preview de Imagem -->
+                <div id="preview-container" style="display: none; margin-top: 10px; text-align: center; position: relative;">
+                    <img id="img-preview" class="foto-preview" style="max-height: 200px; object-fit: cover; border-radius: 10px;">
+                    <button type="button" onclick="removerFoto()" style="position: absolute; top: 5px; right: 5px; background: rgba(255, 0, 0, 0.7); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-weight: bold; font-size: 12px;">X</button>
+                </div>
             </div>
             
             <button class="add-btn" id="btnGuardar" onclick="salvarMomento()">Guardar ✨</button>
@@ -45,12 +55,80 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <script>
-        const supabaseUrl = 'https://byujwlsvmahgyyjcssne.supabase.co';
-        const supabaseKey = 'sb_publishable_wkXJxy14f7R5M5VOHLl5hg_-eSL3Ecg';
-        const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
         window.onload = carregarMomentos;
+
+        // C: Exibe preview da imagem selecionada
+        function mostrarPreview(input) {
+            const container = document.getElementById('preview-container');
+            const preview = document.getElementById('img-preview');
+            const file = input.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    container.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                removerFoto();
+            }
+        }
+
+        function removerFoto() {
+            document.getElementById('foto').value = '';
+            document.getElementById('preview-container').style.display = 'none';
+            document.getElementById('img-preview').src = '';
+        }
+
+        // E: Função para comprimir imagem usando Canvas no lado do cliente
+        function comprimirImagem(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function (event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function () {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Redimensiona mantendo proporção (máximo de 1200px de largura/altura)
+                        const MAX_WIDTH = 1200;
+                        const MAX_HEIGHT = 1200;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Converte para blob jpeg com 75% de qualidade
+                        canvas.toBlob((blob) => {
+                            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(compressedFile);
+                        }, 'image/jpeg', 0.75);
+                    };
+                };
+            });
+        }
 
         async function carregarMomentos() {
             const list = document.getElementById('timeline-list');
@@ -68,21 +146,75 @@
             data.forEach(m => {
                 const imgHtml = m.imagem_url ? `<img src="${m.imagem_url}" class="foto-preview">` : '';
                 const dataFormatada = m.data ? new Date(m.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '';
+                const curtidas = m.curtidas || 0;
                 
                 list.innerHTML += `
-                    <div class="timeline-item">
+                    <div class="timeline-item" style="position: relative;">
                         <small style="color: #ff69b4; font-weight: bold;">${dataFormatada}</small>
                         <h3>${m.titulo || 'Sem título'}</h3>
                         <p>${m.descrição || 'Sem descrição'}</p> 
                         ${imgHtml}
+                        
+                        <!-- D: Botão de Curtida com Corações -->
+                        <div style="display: flex; align-items: center; margin-top: 15px; border-top: 1px dashed #ffb6c1; padding-top: 10px;">
+                            <button onclick="curtirMomento(${m.id}, this)" style="background: none; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; padding: 5px 10px; border-radius: 15px; background-color: #fff0f5; transition: transform 0.2s, background-color 0.2s;">
+                                💖 <span class="like-count" style="font-size: 14px; margin-left: 5px; color: #ff69b4; font-weight: bold;">${curtidas}</span>
+                            </button>
+                        </div>
                     </div>
                 `;
             });
         }
 
+        // D: Incrementar curtidas no Supabase
+        async function curtirMomento(id, buttonEl) {
+            const countEl = buttonEl.querySelector('.like-count');
+            let currentLikes = parseInt(countEl.innerText) || 0;
+            
+            // Efeito visual instantâneo
+            countEl.innerText = currentLikes + 1;
+            buttonEl.style.transform = "scale(1.2)";
+            buttonEl.style.backgroundColor = "#ffe4e1";
+            setTimeout(() => {
+                buttonEl.style.transform = "scale(1)";
+            }, 200);
+
+            try {
+                // Busca o número atual de curtidas para somar 1 de forma consistente
+                const { data, error: selectError } = await _supabase
+                    .from('momentos')
+                    .select('curtidas')
+                    .eq('id', id)
+                    .single();
+
+                if (selectError) throw selectError;
+
+                let novosLikes = (data?.curtidas || 0) + 1;
+
+                const { error: updateError } = await _supabase
+                    .from('momentos')
+                    .update({ curtidas: novosLikes })
+                    .eq('id', id);
+
+                if (updateError) throw updateError;
+
+            } catch (err) {
+                console.error("Erro ao curtir:", err);
+                // Reverte número se falhar
+                countEl.innerText = currentLikes;
+                buttonEl.style.backgroundColor = "#fff0f5";
+
+                if (err.message && (err.message.includes("column") || err.code === "PGRST204")) {
+                    alert("Atenção: Para ativar as curtidas, você precisa criar uma coluna chamada 'curtidas' (tipo bigint ou integer, valor padrão 0) na tabela 'momentos' no seu painel do Supabase! 💕");
+                } else {
+                    alert("Erro ao salvar curtida! Tente novamente.");
+                }
+            }
+        }
+
         async function salvarMomento() {
             const btn = document.getElementById('btnGuardar');
-            const file = document.getElementById('foto').files[0];
+            let file = document.getElementById('foto').files[0];
             const t = document.getElementById('titulo').value;
             const d = document.getElementById('data').value;
             const desc = document.getElementById('desc').value;
@@ -98,8 +230,15 @@
             let urlPublica = null;
 
             try {
+                // E: Aplica compressão automática caso haja imagem
+                if (file) {
+                    btn.innerText = "Comprimindo imagem...";
+                    file = await comprimirImagem(file);
+                }
+
                 // 1. Upload da Foto (Bucket: imagens)
                 if (file) {
+                    btn.innerText = "Enviando foto...";
                     const nomeArquivo = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
                     const { data: uploadData, error: uploadError } = await _supabase.storage
                         .from('imagens')
@@ -112,6 +251,7 @@
                 }
 
                 // 2. Insert na Tabela 'momentos'
+                btn.innerText = "Salvando no banco...";
                 const { error: insertError } = await _supabase
                     .from('momentos')
                     .insert([{ 
