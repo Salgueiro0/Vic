@@ -206,60 +206,36 @@
             });
         }
 
-        // D: Incrementar curtidas no Supabase
+        // D: Incrementar curtidas no Supabase para a tabela 'textinhos' com verificação de segurança
         async function curtirMomento(id, buttonEl) {
-            const countEl = buttonEl.querySelector('.like-count');
-            let currentLikes = parseInt(countEl.innerText) || 0;
-            
-            // Efeito visual instantâneo
-            countEl.innerText = currentLikes + 1;
-            buttonEl.style.transform = "scale(1.2)";
-            buttonEl.style.backgroundColor = "#ffe4e1";
-            setTimeout(() => {
-                buttonEl.style.transform = "scale(1)";
-            }, 200);
+    const countEl = buttonEl.querySelector('.like-count');
+    let currentLikes = parseInt(countEl.innerText) || 0;
+    
+    // Efeito visual
+    countEl.innerText = currentLikes + 1;
+    buttonEl.style.transform = "scale(1.2)";
+    buttonEl.style.backgroundColor = "#ffe4e1";
+    setTimeout(() => { buttonEl.style.transform = "scale(1)"; }, 200);
 
-            try {
-                // Busca o número atual de curtidas para somar 1 de forma consistente
-                const { data, error: selectError } = await _supabase
-                    .from('momentos')
-                    .select('curtidas')
-                    .eq('id', id)
-                    .single();
+    try {
+        // Atualiza a tabela 'momentos' diretamente
+        const { data, error } = await _supabase
+            .from('momentos')
+            .update({ curtidas: currentLikes + 1 })
+            .eq('id', id)
+            .select();
 
-                if (selectError) throw selectError;
-
-                let novosLikes = (data?.curtidas || 0) + 1;
-
-                const { data: updateData, error: updateError } = await _supabase
-                    .from('momentos')
-                    .update({ curtidas: novosLikes })
-                    .eq('id', id)
-                    .select();
-
-                if (updateError) throw updateError;
-
-                // Se o update funcionou mas não alterou nenhuma linha, é bloqueio de RLS do Supabase
-                if (!updateData || updateData.length === 0) {
-                    throw new Error("RLS_BLOCK");
-                }
-
-            } catch (err) {
-                console.error("Erro ao curtir:", err);
-                // Reverte número se falhar
-                countEl.innerText = currentLikes;
-                buttonEl.style.backgroundColor = "#fff0f5";
-
-                if (err.message === "RLS_BLOCK") {
-                    alert("Atenção: A curtida não pôde ser salva no banco! O seu Supabase está bloqueando a edição (UPDATE) por motivos de segurança (Políticas RLS).\n\nPara resolver isso de forma super rápida, veja o tutorial que deixei na resposta e ative a permissão de UPDATE no painel do Supabase! 💕");
-                } else if (err.message && (err.message.includes("column") || err.code === "PGRST204")) {
-                    alert("Atenção: Para ativar as curtidas, você precisa criar uma coluna chamada 'curtidas' (tipo bigint ou integer, valor padrão 0) na tabela 'momentos' no seu painel do Supabase! 💕");
-                } else {
-                    alert("Erro ao salvar curtida! Tente novamente.");
-                }
-            }
-        }
-
+        if (error) throw error;
+        
+        // Se deu tudo certo, mantemos o número
+    } catch (err) {
+        console.error("Erro ao curtir:", err);
+        // Reverte o número na interface se der erro
+        countEl.innerText = currentLikes;
+        buttonEl.style.backgroundColor = "#fff0f5";
+        alert("Erro ao salvar curtida. Verifique as permissões (RLS) da tabela 'momentos'.");
+    }
+}
         async function salvarMomento() {
             const btn = document.getElementById('btnGuardar');
             let file = document.getElementById('foto').files[0];
